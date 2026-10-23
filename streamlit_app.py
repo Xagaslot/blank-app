@@ -1,15 +1,9 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import subprocess
-import sys
-
-# --- AUTOINSTALACIÓN DE LIBRERÍAS (FUERZA BRUTA) ---
-try:
-    import httpx
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "httpx"])
-    import httpx
+import urllib.request
+import json
+import time
 
 # Configuración de la página web de Streamlit
 st.set_page_config(page_title="Slot Telemetry Control", layout="wide")
@@ -28,20 +22,31 @@ HEADERS = {
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
     "Prefer": "return=representation",
-    "Cache-Control": "no-cache"  
+    "Cache-Control": "no-cache"
 }
 
 def leer_tabla_supabase(tabla_nombre):
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
-        response = httpx.get(url, headers=HEADERS)
-        if response.status_code == 200:
-            datos = response.json()
-            if len(datos) > 0:
-                return pd.DataFrame(datos)
+        req = urllib.request.Request(url, headers=HEADERS, method="GET")
+        with urllib.request.urlopen(req) as response:
+            if response.status == 200:
+                datos = json.loads(response.read().decode())
+                if len(datos) > 0:
+                    return pd.DataFrame(datos)
     except Exception:
         pass
     return pd.DataFrame()
+
+def enviar_datos_supabase(tabla_nombre, payload):
+    url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
+    try:
+        data_bytes = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
+        with urllib.request.urlopen(req) as response:
+            pass
+    except Exception:
+        pass
 
 # Descarga previa de datos de la nube
 df_coches_raw = leer_tabla_supabase("coches")
@@ -76,7 +81,7 @@ if opcion_formulario == "Añadir Coche 🚗":
                 "modelo": modelo, "marca": marca, "categoria": categoria, 
                 "precio_compra": precio_compra
             }
-            httpx.post(f"{SUPABASE_URL}/rest/v1/coches", headers=HEADERS, json=payload)
+            enviar_datos_supabase("coches", payload)
             st.sidebar.success(f"🚗 {modelo} guardado.")
             time.sleep(0.5)  
             st.rerun()
@@ -88,7 +93,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
     if st.sidebar.button("Guardar Piloto en la Nube"):
         if nombre_piloto.strip() != "":
             payload = {"piloto": nombre_piloto, "club": club_piloto}
-            httpx.post(f"{SUPABASE_URL}/rest/v1/pilotos", headers=HEADERS, json=payload)
+            enviar_datos_supabase("pilotos", payload)
             st.sidebar.success(f"👤 {nombre_piloto} registrado.")
             time.sleep(0.5)  
             st.rerun()
@@ -111,7 +116,7 @@ elif opcion_formulario == "Añadir Carrera 🏁":
                 "id_coche": id_coche, "vueltas": vueltas, "vuelta_rapida": vuelta_rapida, 
                 "id_piloto": id_piloto, "circuito": circuito
             }
-            httpx.post(f"{SUPABASE_URL}/rest/v1/carreras", headers=HEADERS, json=payload)
+            enviar_datos_supabase("carreras", payload)
             st.sidebar.success("🏁 Telemetría en la nube.")
             time.sleep(0.5)  
             st.rerun()
