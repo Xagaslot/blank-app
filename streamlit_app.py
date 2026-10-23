@@ -33,12 +33,12 @@ HEADERS_GET = {
     "Cache-Control": "no-cache"
 }
 
-# 🏁 CABECERAS EXPLICITAS PARA ENVÍOS (Evita al 100% el error 307 de redirección)
+# Cabeceras explícitas para envíos (POST) sin redirecciones
 HEADERS_POST = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
-    "Prefer": "params=single-object",  # 👈 Fuerza a Supabase a guardar el dato sin desvíos
+    "Prefer": "return=representation",
     "Cache-Control": "no-cache"
 }
 
@@ -56,25 +56,24 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
-    # Usamos la URL limpia sin barras finales para que entre directa al endpoint rest
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
-        # Pasamos las cabeceras POST optimizadas con "single-object"
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS_POST, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status in:
+            # Validaciones corregidas de forma explícita y sin errores de sintaxis
+            if response.status == 201 or response.status == 200:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        # Si aun así Supabase pide redirección (307/308), forzamos la ruta con la barra final exigida
-        if e.code in [307, 308] or "Redirecting" in error_msg:
+        # Si Supabase exige la barra final por su enrutamiento interno
+        if e.code == 307 or e.code == 308 or "Redirecting" in error_msg:
             try:
                 url_alt = f"{BASE_URL}/rest/v1/{tabla_nombre}/"
                 req_alt = urllib.request.Request(url_alt, data=data_bytes, headers=HEADERS_POST, method="POST")
                 with urllib.request.urlopen(req_alt) as resp_alt:
-                    if resp_alt.status in:
+                    if resp_alt.status == 201 or resp_alt.status == 200:
                         return True, "¡Guardado con éxito en la nube! 🏁"
             except Exception as inner_e:
                 return False, f"Fallo de persistencia: {str(inner_e)}"
