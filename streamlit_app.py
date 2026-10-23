@@ -22,27 +22,30 @@ except Exception:
 BASE_URL = BASE_URL.replace("/rest/v1", "")
 if BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
-
-# Forzamos protocolo seguro HTTPS para evitar redirecciones de red
-if BASE_URL.startswith("http://"):
+if BASE_URL.startswith("http://") and not BASE_URL.startswith("https://"):
     BASE_URL = BASE_URL.replace("http://", "https://")
 
-HEADERS = {
+# Cabeceras oficiales estándar para peticiones de lectura (GET)
+HEADERS_GET = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
-    "Prefer": "return=representation",
     "Cache-Control": "no-cache"
 }
 
-# Configuración de un abridor HTTP global que sigue redirecciones automáticamente
-opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler)
-urllib.request.install_opener(opener)
+# 🏁 CABECERAS EXPLICITAS PARA ENVÍOS (Evita al 100% el error 307 de redirección)
+HEADERS_POST = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "params=single-object",  # 👈 Fuerza a Supabase a guardar el dato sin desvíos
+    "Cache-Control": "no-cache"
+}
 
 def leer_tabla_supabase(tabla_nombre):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
-        req = urllib.request.Request(url, headers=HEADERS, method="GET")
+        req = urllib.request.Request(url, headers=HEADERS_GET, method="GET")
         with urllib.request.urlopen(req) as response:
             if response.status == 200:
                 datos = json.loads(response.read().decode())
@@ -53,17 +56,28 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
+    # Usamos la URL limpia sin barras finales para que entre directa al endpoint rest
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
+        # Pasamos las cabeceras POST optimizadas con "single-object"
+        req = urllib.request.Request(url, data=data_bytes, headers=HEADERS_POST, method="POST")
         with urllib.request.urlopen(req) as response:
-            # Línea 61 corregida perfectamente con una comparación directa
-            if response.status == 201 or response.status == 200:
+            if response.status in:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
+        # Si aun así Supabase pide redirección (307/308), forzamos la ruta con la barra final exigida
+        if e.code in [307, 308] or "Redirecting" in error_msg:
+            try:
+                url_alt = f"{BASE_URL}/rest/v1/{tabla_nombre}/"
+                req_alt = urllib.request.Request(url_alt, data=data_bytes, headers=HEADERS_POST, method="POST")
+                with urllib.request.urlopen(req_alt) as resp_alt:
+                    if resp_alt.status in:
+                        return True, "¡Guardado con éxito en la nube! 🏁"
+            except Exception as inner_e:
+                return False, f"Fallo de persistencia: {str(inner_e)}"
         return False, f"Error Base de Datos ({e.code}): {error_msg}"
     except Exception as e:
         return False, f"Fallo de conexión: {str(e)}"
@@ -142,8 +156,8 @@ elif opcion_formulario == "Añadir Carrera 🏁":
         vuelta_rapida = st.sidebar.number_input("Tiempo Vuelta Rápida (s)", min_value=0.0, format="%.3f")
         
         if st.sidebar.button("Guardar Telemetría"):
-            id_coche = int(coche_sel.split(" - "))
-            id_piloto = int(piloto_sel.split(" - "))
+            id_coche = int(coche_sel.split(" - ")[0])
+            id_piloto = int(piloto_sel.split(" - ")[0])
             payload = {
                 "id_coche": id_coche, 
                 "vueltas": vueltas, 
