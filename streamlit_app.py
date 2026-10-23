@@ -18,6 +18,10 @@ except Exception:
     SUPABASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
+# Aseguramos que la URL base no termine en barra para no duplicar
+if SUPABASE_URL.endswith('/'):
+    SUPABASE_URL = SUPABASE_URL[:-1]
+
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -27,6 +31,7 @@ HEADERS = {
 }
 
 def leer_tabla_supabase(tabla_nombre):
+    # Añadida barra explícita antes del nombre de la tabla
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
         req = urllib.request.Request(url, headers=HEADERS, method="GET")
@@ -40,18 +45,28 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
+    # Añadida barra explícita para evitar el error "Redirecting..."
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            # Condición de éxito corregida de forma limpia y directa
             if response.status == 201 or response.status == 200:
                 return True, "Guardado con éxito"
             return False, f"Error del servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        return False, f"Detalle Base de Datos: {error_msg}"
+        # Si el servidor responde con redirección, intentamos forzar la barra final
+        if e.code == 307 or e.code == 308 or "Redirecting" in error_msg:
+            try:
+                url_correcta = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}/"
+                req_alt = urllib.request.Request(url_correcta, data=data_bytes, headers=HEADERS, method="POST")
+                with urllib.request.urlopen(req_alt) as resp_alt:
+                    if resp_alt.status in:
+                        return True, "Guardado con éxito (Ruta corregida)"
+            except Exception as inner_e:
+                return False, f"Fallo en redirección: {str(inner_e)}"
+        return False, f"Detalle Base de Datos (Código {e.code}): {error_msg}"
     except Exception as e:
         return False, f"Error de conexión: {str(e)}"
 
@@ -120,7 +135,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
 elif opcion_formulario == "Añadir Carrera 🏁":
     st.sidebar.subheader("Registro de Sesión / Carrera")
     if not lista_coches or not lista_pilotos:
-        st.sidebar.warning("⚠️ Necesitas registrar al menos un coche and un piloto antes de añadir una carrera.")
+        st.sidebar.warning("⚠️ Necesitas registrar al menos un coche y un piloto antes de añadir una carrera.")
     else:
         coche_sel = st.sidebar.selectbox("Coche que corrió", lista_coches)
         piloto_sel = st.sidebar.selectbox("Piloto", lista_pilotos)
