@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -47,10 +48,12 @@ def leer_tabla_supabase(tabla_nombre):
         if response.status_code == 200:
             datos = response.json()
             if len(datos) > 0:
-                return pd.DataFrame(datos)
-    except Exception:
-        pass
-    return pd.DataFrame()
+                return pd.DataFrame(datos), None
+            return pd.DataFrame(), None
+        else:
+            return pd.DataFrame(), f"Error al leer {tabla_nombre} (Código {response.status_code}): {response.text}"
+    except Exception as e:
+        return pd.DataFrame(), f"Fallo de conexión al leer: {str(e)}"
 
 def enviar_datos_supabase(tabla_nombre, payload):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
@@ -63,11 +66,11 @@ def enviar_datos_supabase(tabla_nombre, payload):
         return False, f"Fallo de conexión técnica: {str(e)}"
 
 # Descarga previa de datos de la nube
-df_coches_raw = leer_tabla_supabase("coches")
-df_pilotos_raw = leer_tabla_supabase("pilotos")
-df_piezas_raw = leer_tabla_supabase("piezas_recambios")
-df_carreras_raw = leer_tabla_supabase("carreras")
-df_mantenimiento_raw = leer_tabla_supabase("mantenimiento")
+df_coches_raw, err_coches = leer_tabla_supabase("coches")
+df_pilotos_raw, err_pilotos = leer_tabla_supabase("pilotos")
+df_piezas_raw, err_piezas = leer_tabla_supabase("piezas_recambios")
+df_carreras_raw, err_carreras = leer_tabla_supabase("carreras")
+df_mantenimiento_raw, err_maint = leer_tabla_supabase("mantenimiento")
 
 lista_coches = [f"{row['id_coche']} - {row['modelo']} ({row['marca']})" for _, row in df_coches_raw.iterrows()] if not df_coches_raw.empty else []
 lista_pilotos = [f"{row['id_piloto']} - {row['piloto']}" for _, row in df_pilotos_raw.iterrows()] if not df_pilotos_raw.empty else []
@@ -94,13 +97,13 @@ if opcion_formulario == "Añadir Coche 🚗":
             payload = {
                 "modelo": modelo, 
                 "marca": marca, 
-                "categoria": category_val if 'category_val' in locals() else categoria, 
+                "categoria": categoria, 
                 "precio_compra": precio_compra
             }
             status, msg = enviar_datos_supabase("coches", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
+                time.sleep(1.2)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -119,7 +122,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
             status, msg = enviar_datos_supabase("pilotos", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
+                time.sleep(1.2)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -148,42 +151,52 @@ elif opcion_formulario == "Añadir Carrera 🏁":
             status, msg = enviar_datos_supabase("carreras", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
+                time.sleep(1.2)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
 
 with pestana_coches:
     st.header("🗂️ Mi Garaje de Slot")
-    if not df_coches_raw.empty:
+    if err_coches:
+        st.error(err_coches)
+    elif not df_coches_raw.empty:
         st.dataframe(df_coches_raw, use_container_width=True)
     else:
         st.info("No hay vehículos guardados en el garaje todavía.")
 
 with pestana_pilotos:
     st.header("👤 Plantilla de Pilotos")
-    if not df_pilotos_raw.empty:
+    if err_pilotos:
+        st.error(err_pilotos)
+    elif not df_pilotos_raw.empty:
         st.dataframe(df_pilotos_raw, use_container_width=True)
     else:
         st.info("Aún no has registrado ningún piloto.")
 
 with pestana_piezas:
     st.header("🔧 Gestión de Componentes e Inventario")
-    if not df_piezas_raw.empty:
+    if err_piezas:
+        st.error(err_piezas)
+    elif not df_piezas_raw.empty:
         st.dataframe(df_piezas_raw, use_container_width=True)
     else:
         st.info("El inventario de piezas está vacío.")
 
 with pestana_carreras:
     st.header("🏁 Cuadro de Telemetría de Carreras")
-    if not df_carreras_raw.empty:
+    if err_carreras:
+        st.error(err_carreras)
+    elif not df_carreras_raw.empty:
         st.dataframe(df_carreras_raw, use_container_width=True)
     else:
         st.info("No se han registrado sesiones ni telemetrías de carreras.")
 
 with pestana_maint:
     st.header("🛠️ Historial del Taller mecánico")
-    if not df_mantenimiento_raw.empty:
+    if err_maint:
+        st.error(err_maint)
+    elif not df_mantenimiento_raw.empty:
         st.dataframe(df_mantenimiento_raw, use_container_width=True)
     else:
         st.info("Mecánica al día. Ningún vehículo ha requerido entrar a boxes todavía.")
