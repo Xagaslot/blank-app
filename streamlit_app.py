@@ -1,12 +1,21 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import httpx
-import time  
+import subprocess
+import sys
 
+# --- AUTOINSTALACIÓN DE LIBRERÍAS (FUERZA BRUTA) ---
+try:
+    import httpx
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "httpx"])
+    import httpx
+
+# Configuración de la página web de Streamlit
 st.set_page_config(page_title="Slot Telemetry Control", layout="wide")
 st.title("🏎️ Slot Control & Telemetry")
 
+# --- 1. CONEXIÓN SEGURA CON SUPABASE ---
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
@@ -34,6 +43,7 @@ def leer_tabla_supabase(tabla_nombre):
         pass
     return pd.DataFrame()
 
+# Descarga previa de datos de la nube
 df_coches_raw = leer_tabla_supabase("coches")
 df_pilotos_raw = leer_tabla_supabase("pilotos")
 df_piezas_raw = leer_tabla_supabase("piezas_recambios")
