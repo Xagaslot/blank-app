@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -22,6 +23,10 @@ BASE_URL = BASE_URL.replace("/rest/v1", "")
 if BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
 
+# 🔒 FORZAMOS PROTOCOLO SEGURO HTTPS PARA EVITAR REDIRECCIONES 307
+if BASE_URL.startswith("http://"):
+    BASE_URL = BASE_URL.replace("http://", "https://")
+
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -30,8 +35,11 @@ HEADERS = {
     "Cache-Control": "no-cache"
 }
 
+# Configuración de un abridor HTTP global que sigue redirecciones automáticamente
+opener = urllib.request.build_opener(urllib.request.HTTPRedirectHandler)
+urllib.request.install_opener(opener)
+
 def leer_tabla_supabase(tabla_nombre):
-    # Ruta estándar para consultas de lectura
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
         req = urllib.request.Request(url, headers=HEADERS, method="GET")
@@ -45,13 +53,12 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
-    # Forzamos la barra inclinada al final de la ruta (Evita al 100% el error 307 Redirecting)
-    url = f"{BASE_URL}/rest/v1/{tabla_nombre}/"
+    url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status == 201 or response.status == 200:
+            if response.status in:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
@@ -185,4 +192,3 @@ with pestana_maint:
         st.dataframe(df_mantenimiento_raw, use_container_width=True)
     else:
         st.info("Mecánica al día. Ningún vehículo ha requerido entrar a boxes todavía.")
-
