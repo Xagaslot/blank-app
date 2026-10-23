@@ -18,10 +18,12 @@ except Exception:
     SUPABASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# 🧼 LIMPIEZA AUTOMÁTICA DE URL (Evita errores 307 de redirección)
+# 🧼 CORRECCIÓN ULTRA-SEGURA DE URL (Evita bucles 307 de redirección)
 SUPABASE_URL = SUPABASE_URL.strip()
 if SUPABASE_URL.endswith('/'):
     SUPABASE_URL = SUPABASE_URL[:-1]
+
+# Si el usuario pegó la URL con /rest/v1 al final, nos quedamos solo con la base limpia
 if "/rest/v1" in SUPABASE_URL:
     SUPABASE_URL = SUPABASE_URL.split("/rest/v1")[0]
 
@@ -52,7 +54,6 @@ def enviar_datos_supabase(tabla_nombre, payload):
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            # Línea 56 corregida perfectamente de forma limpia y explícita
             if response.status == 201 or response.status == 200:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
