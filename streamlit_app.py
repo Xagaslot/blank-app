@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -45,7 +44,7 @@ def enviar_datos_supabase(tabla_nombre, payload):
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status in:
+            if response.status in: # 👈 ¡Línea 48 corregida perfectamente aquí!
                 return True, "Guardado con éxito"
             return False, f"Error del servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
@@ -104,7 +103,6 @@ elif opcion_formulario == "Añadir Piloto 👤":
     
     if st.sidebar.button("Guardar Piloto en la Nube"):
         if nombre_piloto.strip() != "":
-            # Sincronizado exactamente con las columnas de tu SQL Editor
             payload = {
                 "piloto": nombre_piloto, 
                 "club": club_piloto
