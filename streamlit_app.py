@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -18,9 +17,13 @@ except Exception:
     SUPABASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# Aseguramos que la URL base no termine en barra para no duplicar
+# 🧼 LIMPIEZA AUTOMÁTICA DE URL (Evita errores 307 de redirección)
+# Quitamos barras finales o rutas duplicadas si el usuario las pegó por error
+SUPABASE_URL = SUPABASE_URL.strip()
 if SUPABASE_URL.endswith('/'):
     SUPABASE_URL = SUPABASE_URL[:-1]
+if "/rest/v1" in SUPABASE_URL:
+    SUPABASE_URL = SUPABASE_URL.split("/rest/v1")[0]
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -44,28 +47,20 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
+    # Forzamos la estructura oficial limpia requerida por Supabase
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status == 201 or response.status == 200:
-                return True, "Guardado con éxito"
-            return False, f"Error del servidor: Código {response.status}"
+            if response.status in:
+                return True, "¡Guardado con éxito en la nube! 🏁"
+            return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        if e.code == 307 or e.code == 308 or "Redirecting" in error_msg:
-            try:
-                url_correcta = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}/"
-                req_alt = urllib.request.Request(url_correcta, data=data_bytes, headers=HEADERS, method="POST")
-                with urllib.request.urlopen(req_alt) as resp_alt:
-                    if resp_alt.status == 201 or resp_alt.status == 200:
-                        return True, "Guardado con éxito (Ruta corregida)"
-            except Exception as inner_e:
-                return False, f"Fallo en redirección: {str(inner_e)}"
-        return False, f"Detalle Base de Datos (Código {e.code}): {error_msg}"
+        return False, f"Error Base de Datos ({e.code}): {error_msg}"
     except Exception as e:
-        return False, f"Error de conexión: {str(e)}"
+        return False, f"Fallo de conexión: {str(e)}"
 
 # Descarga previa de datos de la nube
 df_coches_raw = leer_tabla_supabase("coches")
@@ -105,7 +100,7 @@ if opcion_formulario == "Añadir Coche 🚗":
             status, msg = enviar_datos_supabase("coches", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.5)  
+                time.sleep(0.6)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -124,7 +119,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
             status, msg = enviar_datos_supabase("pilotos", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.5)  
+                time.sleep(0.6)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -153,7 +148,7 @@ elif opcion_formulario == "Añadir Carrera 🏁":
             status, msg = enviar_datos_supabase("carreras", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.5)  
+                time.sleep(0.6)  
                 st.rerun()
             else:
                 st.sidebar.error(msg)
