@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -44,9 +45,14 @@ def enviar_datos_supabase(tabla_nombre, payload):
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            pass
-    except Exception:
-        pass
+            if response.status in:
+                return True, "Guardado con éxito"
+            return False, f"Error del servidor: Código {response.status}"
+    except urllib.error.HTTPError as e:
+        error_msg = e.read().decode()
+        return False, f"Detalle Base de Datos: {error_msg}"
+    except Exception as e:
+        return False, f"Error de conexión: {str(e)}"
 
 # Descarga previa de datos de la nube
 df_coches_raw = leer_tabla_supabase("coches")
@@ -78,25 +84,38 @@ if opcion_formulario == "Añadir Coche 🚗":
     if st.sidebar.button("Guardar Coche en la Nube"):
         if modelo.strip() != "":
             payload = {
-                "modelo": modelo, "marca": marca, "categoria": categoria, 
+                "modelo": modelo, 
+                "marca": marca, 
+                "categoria": categoria, 
                 "precio_compra": precio_compra
             }
-            enviar_datos_supabase("coches", payload)
-            st.sidebar.success(f"🚗 {modelo} guardado.")
-            time.sleep(0.5)  
-            st.rerun()
+            status, msg = enviar_datos_supabase("coches", payload)
+            if status:
+                st.sidebar.success(msg)
+                time.sleep(0.5)  
+                st.rerun()
+            else:
+                st.sidebar.error(msg)
 
 elif opcion_formulario == "Añadir Piloto 👤":
     st.sidebar.subheader("Nuevo Piloto")
     nombre_piloto = st.sidebar.text_input("Nombre del piloto")
     club_piloto = st.sidebar.text_input("Club / Escudería")
+    
     if st.sidebar.button("Guardar Piloto en la Nube"):
         if nombre_piloto.strip() != "":
-            payload = {"piloto": nombre_piloto, "club": club_piloto}
-            enviar_datos_supabase("pilotos", payload)
-            st.sidebar.success(f"👤 {nombre_piloto} registrado.")
-            time.sleep(0.5)  
-            st.rerun()
+            # Sincronizado exactamente con las columnas de tu SQL Editor
+            payload = {
+                "piloto": nombre_piloto, 
+                "club": club_piloto
+            }
+            status, msg = enviar_datos_supabase("pilotos", payload)
+            if status:
+                st.sidebar.success(msg)
+                time.sleep(0.5)  
+                st.rerun()
+            else:
+                st.sidebar.error(msg)
 
 elif opcion_formulario == "Añadir Carrera 🏁":
     st.sidebar.subheader("Registro de Sesión / Carrera")
@@ -113,13 +132,19 @@ elif opcion_formulario == "Añadir Carrera 🏁":
             id_coche = int(coche_sel.split(" - ")[0])
             id_piloto = int(piloto_sel.split(" - ")[0])
             payload = {
-                "id_coche": id_coche, "vueltas": vueltas, "vuelta_rapida": vuelta_rapida, 
-                "id_piloto": id_piloto, "circuito": circuito
+                "id_coche": id_coche, 
+                "vueltas": vueltas, 
+                "vuelta_rapida": vuelta_rapida, 
+                "id_piloto": id_piloto, 
+                "circuito": circuito
             }
-            enviar_datos_supabase("carreras", payload)
-            st.sidebar.success("🏁 Telemetría en la nube.")
-            time.sleep(0.5)  
-            st.rerun()
+            status, msg = enviar_datos_supabase("carreras", payload)
+            if status:
+                st.sidebar.success(msg)
+                time.sleep(0.5)  
+                st.rerun()
+            else:
+                st.sidebar.error(msg)
 
 with pestana_coches:
     st.header("🗂️ Mi Garaje de Slot")
