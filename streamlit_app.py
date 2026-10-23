@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -12,18 +11,16 @@ st.title("🏎️ Slot Control & Telemetry")
 
 # --- 1. CONEXIÓN SEGURA CON SUPABASE ---
 try:
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    BASE_URL = st.secrets["SUPABASE_URL"].strip()
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
 except Exception:
-    SUPABASE_URL = "https://supabase.co"
+    BASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# 🧼 LIMPIEZA AUTOMÁTICA DE URL DE FORMA SÓLIDA
-SUPABASE_URL = SUPABASE_URL.strip()
-# Si por error se pegó con la ruta rest, la eliminamos limpiamente
-SUPABASE_URL = SUPABASE_URL.replace("/rest/v1", "")
-if SUPABASE_URL.endswith('/'):
-    SUPABASE_URL = SUPABASE_URL[:-1]
+# Limpieza absoluta de la URL base para asegurar que no tenga rutas añadidas
+BASE_URL = BASE_URL.replace("/rest/v1", "")
+if BASE_URL.endswith('/'):
+    BASE_URL = BASE_URL[:-1]
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -34,7 +31,8 @@ HEADERS = {
 }
 
 def leer_tabla_supabase(tabla_nombre):
-    url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}?select=*"
+    # Ruta estándar para consultas de lectura
+    url = f"{BASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
         req = urllib.request.Request(url, headers=HEADERS, method="GET")
         with urllib.request.urlopen(req) as response:
@@ -47,7 +45,8 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
-    url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
+    # Forzamos la barra inclinada al final de la ruta (Evita al 100% el error 307 Redirecting)
+    url = f"{BASE_URL}/rest/v1/{tabla_nombre}/"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
@@ -186,3 +185,4 @@ with pestana_maint:
         st.dataframe(df_mantenimiento_raw, use_container_width=True)
     else:
         st.info("Mecánica al día. Ningún vehículo ha requerido entrar a boxes todavía.")
+
