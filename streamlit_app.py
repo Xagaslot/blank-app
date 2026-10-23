@@ -18,20 +18,14 @@ except ImportError:
 st.set_page_config(page_title="Slot Telemetry Control", layout="wide")
 st.title("🏎️ Slot Control & Telemetry")
 
-# --- 1. CONEXIÓN SEGURA CON SUPABASE ---
+# --- 1. CONEXIÓN FIJA Y ULTRA-SEGURA CON TU PROYECTO ---
+# Ignoramos la URL de la casilla de Secrets y forzamos tu dirección web real directamente por código
+BASE_URL = "https://supabase.co"
+
 try:
-    BASE_URL = st.secrets["SUPABASE_URL"].strip()
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
 except Exception:
-    BASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
-
-# Limpieza absoluta de la URL base
-BASE_URL = BASE_URL.replace("/rest/v1", "")
-if BASE_URL.endswith('/'):
-    BASE_URL = BASE_URL[:-1]
-if BASE_URL.startswith("http://") and not BASE_URL.startswith("https://"):
-    BASE_URL = BASE_URL.replace("http://", "https://")
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -139,8 +133,8 @@ elif opcion_formulario == "Añadir Carrera 🏁":
         vuelta_rapida = st.sidebar.number_input("Tiempo Vuelta Rápida (s)", min_value=0.0, format="%.3f")
         
         if st.sidebar.button("Guardar Telemetría"):
-            id_coche = int(coche_sel.split(" - ")[0])
-            id_piloto = int(piloto_sel.split(" - ")[0])
+            id_coche = int(coche_sel.split(" - "))
+            id_piloto = int(piloto_sel.split(" - "))
             payload = {
                 "id_coche": id_coche, 
                 "vueltas": vueltas, 
