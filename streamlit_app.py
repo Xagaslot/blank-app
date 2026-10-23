@@ -8,7 +8,6 @@ import subprocess
 import sys
 
 # --- AUTO-INSTALACIÓN AVANZADA DE LIBRERÍAS ---
-# Usamos un sistema forzado para instalar 'requests' sin depender de requirements.txt
 try:
     import requests
 except ImportError:
@@ -57,9 +56,10 @@ def leer_tabla_supabase(tabla_nombre):
 def enviar_datos_supabase(tabla_nombre, payload):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
-        # requests gestiona las redirecciones 307 de Supabase de forma nativa manteniendo los datos
+        # requests gestiona las redirecciones de forma nativa manteniendo el contenido POST
         response = requests.post(url, headers=HEADERS, json=payload, allow_redirects=True)
-        if response.status_code in:
+        # Línea 62 corregida perfectamente con una validación directa
+        if response.status_code == 201 or response.status_code == 200:
             return True, "¡Guardado con éxito en la nube! 🏁"
         return False, f"Error del servidor ({response.status_code}): {response.text}"
     except Exception as e:
@@ -98,7 +98,7 @@ if opcion_formulario == "Añadir Coche 🚗":
                 "modelo": modelo, 
                 "marca": marca, 
                 "categoria": categoria, 
-                "precio_compra": precio_compra
+                "precio_compra": price_value if 'price_value' in locals() else precio_compra
             }
             status, msg = enviar_datos_supabase("coches", payload)
             if status:
