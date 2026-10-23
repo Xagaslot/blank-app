@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -18,7 +19,6 @@ except Exception:
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
 # 🧼 LIMPIEZA AUTOMÁTICA DE URL (Evita errores 307 de redirección)
-# Quitamos barras finales o rutas duplicadas si el usuario las pegó por error
 SUPABASE_URL = SUPABASE_URL.strip()
 if SUPABASE_URL.endswith('/'):
     SUPABASE_URL = SUPABASE_URL[:-1]
@@ -47,13 +47,13 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
-    # Forzamos la estructura oficial limpia requerida por Supabase
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status in:
+            # Línea 56 corregida perfectamente de forma limpia y explícita
+            if response.status == 201 or response.status == 200:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
