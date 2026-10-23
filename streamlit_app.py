@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -44,7 +45,8 @@ def enviar_datos_supabase(tabla_nombre, payload):
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status in: # 👈 ¡Línea 48 corregida perfectamente aquí!
+            # Condición de éxito corregida de forma limpia y directa
+            if response.status == 201 or response.status == 200:
                 return True, "Guardado con éxito"
             return False, f"Error del servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
@@ -118,7 +120,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
 elif opcion_formulario == "Añadir Carrera 🏁":
     st.sidebar.subheader("Registro de Sesión / Carrera")
     if not lista_coches or not lista_pilotos:
-        st.sidebar.warning("⚠️ Necesitas registrar al menos un coche y un piloto antes de añadir una carrera.")
+        st.sidebar.warning("⚠️ Necesitas registrar al menos un coche and un piloto antes de añadir una carrera.")
     else:
         coche_sel = st.sidebar.selectbox("Coche que corrió", lista_coches)
         piloto_sel = st.sidebar.selectbox("Piloto", lista_pilotos)
