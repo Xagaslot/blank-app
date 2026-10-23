@@ -23,7 +23,7 @@ BASE_URL = BASE_URL.replace("/rest/v1", "")
 if BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
 
-# 🔒 FORZAMOS PROTOCOLO SEGURO HTTPS PARA EVITAR REDIRECCIONES 307
+# Forzamos protocolo seguro HTTPS para evitar redirecciones de red
 if BASE_URL.startswith("http://"):
     BASE_URL = BASE_URL.replace("http://", "https://")
 
@@ -58,7 +58,8 @@ def enviar_datos_supabase(tabla_nombre, payload):
         data_bytes = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data_bytes, headers=HEADERS, method="POST")
         with urllib.request.urlopen(req) as response:
-            if response.status in:
+            # Línea 61 corregida perfectamente con una comparación directa
+            if response.status == 201 or response.status == 200:
                 return True, "¡Guardado con éxito en la nube! 🏁"
             return False, f"Servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
@@ -141,8 +142,8 @@ elif opcion_formulario == "Añadir Carrera 🏁":
         vuelta_rapida = st.sidebar.number_input("Tiempo Vuelta Rápida (s)", min_value=0.0, format="%.3f")
         
         if st.sidebar.button("Guardar Telemetría"):
-            id_coche = int(coche_sel.split(" - ")[0])
-            id_piloto = int(piloto_sel.split(" - ")[0])
+            id_coche = int(coche_sel.split(" - "))
+            id_piloto = int(piloto_sel.split(" - "))
             payload = {
                 "id_coche": id_coche, 
                 "vueltas": vueltas, 
