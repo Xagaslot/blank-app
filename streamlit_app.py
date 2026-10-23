@@ -1,4 +1,5 @@
-import streamlit st
+
+import streamlit as st
 import pandas as pd
 from datetime import datetime
 import urllib.request
@@ -58,7 +59,6 @@ def enviar_datos_supabase(tabla_nombre, payload):
                 url_correcta = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}/"
                 req_alt = urllib.request.Request(url_correcta, data=data_bytes, headers=HEADERS, method="POST")
                 with urllib.request.urlopen(req_alt) as resp_alt:
-                    # Línea 65 corregida perfectamente aquí con valores definidos
                     if resp_alt.status == 201 or resp_alt.status == 200:
                         return True, "Guardado con éxito (Ruta corregida)"
             except Exception as inner_e:
@@ -141,8 +141,8 @@ elif opcion_formulario == "Añadir Carrera 🏁":
         vuelta_rapida = st.sidebar.number_input("Tiempo Vuelta Rápida (s)", min_value=0.0, format="%.3f")
         
         if st.sidebar.button("Guardar Telemetría"):
-            id_coche = int(coche_sel.split(" - "))
-            id_piloto = int(piloto_sel.split(" - "))
+            id_coche = int(coche_sel.split(" - ")[0])
+            id_piloto = int(piloto_sel.split(" - ")[0])
             payload = {
                 "id_coche": id_coche, 
                 "vueltas": vueltas, 
