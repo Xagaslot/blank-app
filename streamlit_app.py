@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -7,7 +6,7 @@ import time
 import subprocess
 import sys
 
-# --- AUTO-INSTALACIÓN AVANZADA DE LIBRERÍAS ---
+# --- AUTO-INSTALACIÓN DE LIBRERÍAS ---
 try:
     import requests
 except ImportError:
@@ -26,7 +25,7 @@ except Exception:
     BASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# Aseguramos la limpieza de la URL base
+# Limpieza absoluta de la URL base
 BASE_URL = BASE_URL.replace("/rest/v1", "")
 if BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
@@ -56,9 +55,7 @@ def leer_tabla_supabase(tabla_nombre):
 def enviar_datos_supabase(tabla_nombre, payload):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
-        # requests gestiona las redirecciones de forma nativa manteniendo el contenido POST
         response = requests.post(url, headers=HEADERS, json=payload, allow_redirects=True)
-        # Línea 62 corregida perfectamente con una validación directa
         if response.status_code == 201 or response.status_code == 200:
             return True, "¡Guardado con éxito en la nube! 🏁"
         return False, f"Error del servidor ({response.status_code}): {response.text}"
@@ -97,13 +94,13 @@ if opcion_formulario == "Añadir Coche 🚗":
             payload = {
                 "modelo": modelo, 
                 "marca": marca, 
-                "categoria": categoria, 
-                "precio_compra": price_value if 'price_value' in locals() else precio_compra
+                "categoria": category_val if 'category_val' in locals() else categoria, 
+                "precio_compra": precio_compra
             }
             status, msg = enviar_datos_supabase("coches", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.6)  
+                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -122,7 +119,7 @@ elif opcion_formulario == "Añadir Piloto 👤":
             status, msg = enviar_datos_supabase("pilotos", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.6)  
+                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
                 st.rerun()
             else:
                 st.sidebar.error(msg)
@@ -151,7 +148,7 @@ elif opcion_formulario == "Añadir Carrera 🏁":
             status, msg = enviar_datos_supabase("carreras", payload)
             if status:
                 st.sidebar.success(msg)
-                time.sleep(0.6)  
+                time.sleep(1.2)  # 👈 Pausa ampliada para dar tiempo a Supabase
                 st.rerun()
             else:
                 st.sidebar.error(msg)
