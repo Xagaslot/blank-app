@@ -18,14 +18,12 @@ except Exception:
     SUPABASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# 🧼 CORRECCIÓN ULTRA-SEGURA DE URL (Evita bucles 307 de redirección)
+# 🧼 LIMPIEZA AUTOMÁTICA DE URL DE FORMA SÓLIDA
 SUPABASE_URL = SUPABASE_URL.strip()
+# Si por error se pegó con la ruta rest, la eliminamos limpiamente
+SUPABASE_URL = SUPABASE_URL.replace("/rest/v1", "")
 if SUPABASE_URL.endswith('/'):
     SUPABASE_URL = SUPABASE_URL[:-1]
-
-# Si el usuario pegó la URL con /rest/v1 al final, nos quedamos solo con la base limpia
-if "/rest/v1" in SUPABASE_URL:
-    SUPABASE_URL = SUPABASE_URL.split("/rest/v1")[0]
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
