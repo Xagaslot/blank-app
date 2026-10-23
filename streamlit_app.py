@@ -1,5 +1,4 @@
-
-import streamlit as st
+import streamlit st
 import pandas as pd
 from datetime import datetime
 import urllib.request
@@ -31,7 +30,6 @@ HEADERS = {
 }
 
 def leer_tabla_supabase(tabla_nombre):
-    # Añadida barra explícita antes del nombre de la tabla
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
         req = urllib.request.Request(url, headers=HEADERS, method="GET")
@@ -45,7 +43,6 @@ def leer_tabla_supabase(tabla_nombre):
     return pd.DataFrame()
 
 def enviar_datos_supabase(tabla_nombre, payload):
-    # Añadida barra explícita para evitar el error "Redirecting..."
     url = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}"
     try:
         data_bytes = json.dumps(payload).encode('utf-8')
@@ -56,13 +53,13 @@ def enviar_datos_supabase(tabla_nombre, payload):
             return False, f"Error del servidor: Código {response.status}"
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        # Si el servidor responde con redirección, intentamos forzar la barra final
         if e.code == 307 or e.code == 308 or "Redirecting" in error_msg:
             try:
                 url_correcta = f"{SUPABASE_URL}/rest/v1/{tabla_nombre}/"
                 req_alt = urllib.request.Request(url_correcta, data=data_bytes, headers=HEADERS, method="POST")
                 with urllib.request.urlopen(req_alt) as resp_alt:
-                    if resp_alt.status in:
+                    # Línea 65 corregida perfectamente aquí con valores definidos
+                    if resp_alt.status == 201 or resp_alt.status == 200:
                         return True, "Guardado con éxito (Ruta corregida)"
             except Exception as inner_e:
                 return False, f"Fallo en redirección: {str(inner_e)}"
@@ -144,8 +141,8 @@ elif opcion_formulario == "Añadir Carrera 🏁":
         vuelta_rapida = st.sidebar.number_input("Tiempo Vuelta Rápida (s)", min_value=0.0, format="%.3f")
         
         if st.sidebar.button("Guardar Telemetría"):
-            id_coche = int(coche_sel.split(" - ")[0])
-            id_piloto = int(piloto_sel.split(" - ")[0])
+            id_coche = int(coche_sel.split(" - "))
+            id_piloto = int(piloto_sel.split(" - "))
             payload = {
                 "id_coche": id_coche, 
                 "vueltas": vueltas, 
