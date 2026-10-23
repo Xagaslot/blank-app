@@ -2,9 +2,18 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import urllib.request
 import json
 import time
+import subprocess
+import sys
+
+# --- AUTO-INSTALACIÓN AVANZADA DE LIBRERÍAS ---
+# Usamos un sistema forzado para instalar 'requests' sin depender de requirements.txt
+try:
+    import requests
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
+    import requests
 
 # Configuración de la página web de Streamlit
 st.set_page_config(page_title="Slot Telemetry Control", layout="wide")
@@ -18,23 +27,14 @@ except Exception:
     BASE_URL = "https://supabase.co"
     SUPABASE_KEY = "sb_publishable_8CCHsKMSd6VwkGa4x25eDQ_px3Ju8or"
 
-# Limpieza absoluta de la URL base para asegurar que no tenga rutas añadidas
+# Aseguramos la limpieza de la URL base
 BASE_URL = BASE_URL.replace("/rest/v1", "")
 if BASE_URL.endswith('/'):
     BASE_URL = BASE_URL[:-1]
 if BASE_URL.startswith("http://") and not BASE_URL.startswith("https://"):
     BASE_URL = BASE_URL.replace("http://", "https://")
 
-# Cabeceras oficiales estándar para peticiones de lectura (GET)
-HEADERS_GET = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
-    "Cache-Control": "no-cache"
-}
-
-# Cabeceras explícitas para envíos (POST) sin redirecciones
-HEADERS_POST = {
+HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
@@ -45,12 +45,11 @@ HEADERS_POST = {
 def leer_tabla_supabase(tabla_nombre):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}?select=*"
     try:
-        req = urllib.request.Request(url, headers=HEADERS_GET, method="GET")
-        with urllib.request.urlopen(req) as response:
-            if response.status == 200:
-                datos = json.loads(response.read().decode())
-                if len(datos) > 0:
-                    return pd.DataFrame(datos)
+        response = requests.get(url, headers=HEADERS)
+        if response.status_code == 200:
+            datos = response.json()
+            if len(datos) > 0:
+                return pd.DataFrame(datos)
     except Exception:
         pass
     return pd.DataFrame()
@@ -58,28 +57,13 @@ def leer_tabla_supabase(tabla_nombre):
 def enviar_datos_supabase(tabla_nombre, payload):
     url = f"{BASE_URL}/rest/v1/{tabla_nombre}"
     try:
-        data_bytes = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data_bytes, headers=HEADERS_POST, method="POST")
-        with urllib.request.urlopen(req) as response:
-            # Validaciones corregidas de forma explícita y sin errores de sintaxis
-            if response.status == 201 or response.status == 200:
-                return True, "¡Guardado con éxito en la nube! 🏁"
-            return False, f"Servidor: Código {response.status}"
-    except urllib.error.HTTPError as e:
-        error_msg = e.read().decode()
-        # Si Supabase exige la barra final por su enrutamiento interno
-        if e.code == 307 or e.code == 308 or "Redirecting" in error_msg:
-            try:
-                url_alt = f"{BASE_URL}/rest/v1/{tabla_nombre}/"
-                req_alt = urllib.request.Request(url_alt, data=data_bytes, headers=HEADERS_POST, method="POST")
-                with urllib.request.urlopen(req_alt) as resp_alt:
-                    if resp_alt.status == 201 or resp_alt.status == 200:
-                        return True, "¡Guardado con éxito en la nube! 🏁"
-            except Exception as inner_e:
-                return False, f"Fallo de persistencia: {str(inner_e)}"
-        return False, f"Error Base de Datos ({e.code}): {error_msg}"
+        # requests gestiona las redirecciones 307 de Supabase de forma nativa manteniendo los datos
+        response = requests.post(url, headers=HEADERS, json=payload, allow_redirects=True)
+        if response.status_code in:
+            return True, "¡Guardado con éxito en la nube! 🏁"
+        return False, f"Error del servidor ({response.status_code}): {response.text}"
     except Exception as e:
-        return False, f"Fallo de conexión: {str(e)}"
+        return False, f"Fallo de conexión técnica: {str(e)}"
 
 # Descarga previa de datos de la nube
 df_coches_raw = leer_tabla_supabase("coches")
